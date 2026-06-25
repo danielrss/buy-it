@@ -9,7 +9,11 @@ BASE = "/v1/product-categories"
 @pytest.mark.integration
 class TestDeleteProductCategory:
     async def test_delete_child_returns_204(self, client: AsyncClient) -> None:
-        parent = (await client.post(BASE, json={"name": "DelParent"})).json()
+        parent = (
+            await client.post(
+                BASE, json={"name": "DelParent", "parent_category_id": None}
+            )
+        ).json()
         child = (
             await client.post(
                 BASE, json={"name": "DelChild", "parent_category_id": parent["id"]}
@@ -21,7 +25,11 @@ class TestDeleteProductCategory:
     async def test_delete_parent_with_child_returns_409(
         self, client: AsyncClient
     ) -> None:
-        parent = (await client.post(BASE, json={"name": "BlockedParent"})).json()
+        parent = (
+            await client.post(
+                BASE, json={"name": "BlockedParent", "parent_category_id": None}
+            )
+        ).json()
         await client.post(
             BASE, json={"name": "BlockedChild", "parent_category_id": parent["id"]}
         )
@@ -31,7 +39,11 @@ class TestDeleteProductCategory:
     async def test_delete_parent_after_child_removed_returns_204(
         self, client: AsyncClient
     ) -> None:
-        parent = (await client.post(BASE, json={"name": "FreeParent"})).json()
+        parent = (
+            await client.post(
+                BASE, json={"name": "FreeParent", "parent_category_id": None}
+            )
+        ).json()
         child = (
             await client.post(
                 BASE, json={"name": "FreeChild", "parent_category_id": parent["id"]}

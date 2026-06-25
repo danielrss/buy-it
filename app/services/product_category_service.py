@@ -48,7 +48,9 @@ class ProductCategoryService:
         return ProductCategoryRead.model_validate(category)
 
     async def list(self) -> list[ProductCategoryRead]:
-        result = await self._session.execute(select(ProductCategory))
+        result = await self._session.execute(
+            select(ProductCategory).order_by(ProductCategory.name)
+        )
         return [ProductCategoryRead.model_validate(c) for c in result.scalars().all()]
 
     async def update(

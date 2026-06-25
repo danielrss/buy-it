@@ -9,7 +9,9 @@ BASE = "/v1/product-categories"
 @pytest.mark.integration
 class TestGetProductCategory:
     async def test_get_returns_200(self, client: AsyncClient) -> None:
-        created = (await client.post(BASE, json={"name": "GetMe"})).json()
+        created = (
+            await client.post(BASE, json={"name": "GetMe", "parent_category_id": None})
+        ).json()
         resp = await client.get(f"{BASE}/{created['id']}")
         assert resp.status_code == 200
         assert resp.json()["id"] == created["id"]
@@ -19,8 +21,8 @@ class TestGetProductCategory:
         assert resp.status_code == 404
 
     async def test_list_contains_created_categories(self, client: AsyncClient) -> None:
-        await client.post(BASE, json={"name": "Alpha"})
-        await client.post(BASE, json={"name": "Beta"})
+        await client.post(BASE, json={"name": "Alpha", "parent_category_id": None})
+        await client.post(BASE, json={"name": "Beta", "parent_category_id": None})
         resp = await client.get(BASE)
         assert resp.status_code == 200
         names = {c["name"] for c in resp.json()}

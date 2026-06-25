@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict
 
 class ProductCategoryWrite(BaseModel):
     name: str
-    parent_category_id: uuid.UUID | None = None
+    parent_category_id: uuid.UUID | None
 
 
 class ProductCategoryRead(BaseModel):

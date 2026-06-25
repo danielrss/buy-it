@@ -9,7 +9,9 @@ BASE = "/v1/product-categories"
 @pytest.mark.integration
 class TestCreateProductCategory:
     async def test_create_returns_201_with_id(self, client: AsyncClient) -> None:
-        resp = await client.post(BASE, json={"name": "Electronics"})
+        resp = await client.post(
+            BASE, json={"name": "Electronics", "parent_category_id": None}
+        )
         assert resp.status_code == 201
         body = resp.json()
         assert uuid.UUID(body["id"])
@@ -17,7 +19,9 @@ class TestCreateProductCategory:
         assert body["parent_category_id"] is None
 
     async def test_create_child_with_valid_parent(self, client: AsyncClient) -> None:
-        parent = (await client.post(BASE, json={"name": "Parent"})).json()
+        parent = (
+            await client.post(BASE, json={"name": "Parent", "parent_category_id": None})
+        ).json()
         resp = await client.post(
             BASE, json={"name": "Child", "parent_category_id": parent["id"]}
         )
@@ -25,8 +29,10 @@ class TestCreateProductCategory:
         assert resp.json()["parent_category_id"] == parent["id"]
 
     async def test_create_duplicate_name_returns_409(self, client: AsyncClient) -> None:
-        await client.post(BASE, json={"name": "Duplicate"})
-        resp = await client.post(BASE, json={"name": "Duplicate"})
+        await client.post(BASE, json={"name": "Duplicate", "parent_category_id": None})
+        resp = await client.post(
+            BASE, json={"name": "Duplicate", "parent_category_id": None}
+        )
         assert resp.status_code == 409
 
     async def test_create_with_nonexistent_parent_returns_400(
