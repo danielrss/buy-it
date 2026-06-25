@@ -21,7 +21,7 @@ FastAPI backend for the buy-it e-commerce platform. Python 3.13, flat `app/` lay
 | `pyright` | >=1.1 | 1.1.410 | Type checker (convert to `ty` when it has an official release) |
 
 ### The app runs ONLY in Docker
-There is no local uvicorn recipe. Virtual environment is used only for tests/lint/typecheck/autocomplete.
+There is no local uvicorn recipe. Virtual environment is used for tests/lint/typecheck/autocomplete/running migrations.
 
 ```bash
 just up      # docker compose up --build
@@ -32,7 +32,8 @@ just logs    # docker compose logs -f api
 ### No pre-commit hooks
 Skipped by choice. Run quality checks manually before committing:
 ```bash
-just check   # lint + typecheck + test
+just check     # lint + typecheck + unit tests
+just test-int  # integration tests
 ```
 
 ### Run `just fmt` after every file edit
@@ -40,7 +41,7 @@ just check   # lint + typecheck + test
 ### Tests are split unit / integration
 ```bash
 just test-unit   # tests/unit/   - fast, no app/HTTP
-just test-int    # tests/integration/ - through the ASGI app via httpx
+just test-int    # tests/integration/ - through the ASGI app via httpx using ephemeral postgres DB
 just test        # both
 ```
 
@@ -62,8 +63,12 @@ buy-it/
 │   │       ├── base.py     # DeclarativeBase - all models inherit from this
 │   │       ├── engine.py   # cached AsyncEngine + async_sessionmaker
 │   │       └── health.py   # check_database(session) → bool (SELECT 1)
+│   ├── models/             # SQLAlchemy ORM models (inherit from infrastructure/db/base.py)
+│   ├── schemas/
+│   │   └── health_schema.py  # HealthResponse Pydantic model
+│   ├── services/           # Business logic; executes SQL directly via AsyncSession
 │   └── routers/
-│       └── health.py       # GET /health and GET /health/db
+│       └── health_router.py  # GET /health and GET /health/db
 ├── migrations/             # Alembic; filenames are <epoch>_<slug>.py
 │   ├── env.py
 │   ├── script.py.mako
@@ -90,7 +95,7 @@ buy-it/
 `create_app()` in `main.py` builds and returns the `FastAPI` instance. This keeps the app testable (each test gets a fresh instance) and the DI wiring clean. The module-level `app = create_app()` is only for uvicorn's entry point.
 
 ### DI wiring point
-`deps.py` is intentionally sparse now. It is the single place to add FastAPI `Depends()` providers as features land - services, DB sessions, repositories, etc.
+`deps.py` is intentionally sparse now. It is the single place to add FastAPI `Depends()` providers as features land - services, DB sessions, etc.
 
 ### Configuration
 `app/config.py` exports `get_settings()` (LRU-cached). Settings read from env or `.env`. Available variables: `ENVIRONMENT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_HOST` (default: `db`), `POSTGRES_PORT` (default: `5432`).
@@ -98,12 +103,12 @@ buy-it/
 
 See `ARCHITECTURE.md` for the full pattern with a product-search example. The short version:
 
-1. Add `app/domain/` - pure dataclasses/Protocols, zero framework imports.
-2. Add `app/services/` - business logic, depends on domain Protocols.
-3. Add `app/infrastructure/` - concrete repository implementations (SQL, etc.).
+1. Add ORM model under `app/models/` (inherit from `Base` in `infrastructure/db/base.py`).
+2. Add Pydantic request/response schemas under `app/schemas/`.
+3. Add service under `app/services/` — business logic and SQL queries via `AsyncSession`.
 4. Wire the service into `deps.py` via `Depends()`.
 5. Add an `APIRouter` under `app/routers/` and register it in `create_app()`.
-6. Unit-test the service with a fake in-memory repository; integration-test the route.
+6. Unit-test the service; integration-test the route.
 
 **Rule:** add layers with the first real feature - don't pre-build empty folders.
 
@@ -120,7 +125,7 @@ See `ARCHITECTURE.md` for the full pattern with a product-search example. The sh
 | `just lint` | `ruff check app tests` |
 | `just fmt` | `ruff format app tests` |
 | `just typecheck` | `pyright` |
-| `just check` | lint + typecheck + test |
+| `just check` | lint + typecheck + unit tests |
 | `just migrate` | Apply all pending Alembic migrations |
 | `just migration name=...` | Generate a new autogenerate migration |
 | `just migrate-down` | Roll back the most recent migration |

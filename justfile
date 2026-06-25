@@ -48,8 +48,8 @@ lint: check-python
 typecheck: check-python
     uv run pyright
 
-# Run lint + typecheck + tests
-check: lint typecheck test
+# Run lint + typecheck + unit tests
+check: lint typecheck test-unit
 
 # Run code formatting
 fmt: check-python

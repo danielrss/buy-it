@@ -11,7 +11,7 @@ A FastAPI backend for the buy-it e-commerce platform.
 ## Setup
 
 ```bash
-uv sync          # install deps into .venv (for tests/lint/typecheck/autocomplete only)
+uv sync          # install deps into .venv (for tests/lint/typecheck/autocomplete/running migrations)
 ```
 
 ## Running the app
@@ -54,7 +54,7 @@ just test-int    # integration tests only (through the ASGI app)
 just lint        # ruff check
 just fmt         # ruff format
 just typecheck   # pyright
-just check       # lint + typecheck + test
+just check       # lint + typecheck + unit tests
 ```
 
 ## Configuration

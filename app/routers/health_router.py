@@ -1,15 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps import get_db_session
 from app.infrastructure.db.health import check_database
+from app.schemas.health_schema import HealthResponse
 
 router = APIRouter(prefix="/health", tags=["health"])
-
-
-class HealthResponse(BaseModel):
-    status: str
 
 
 @router.get("/", response_model=HealthResponse)
