@@ -12,3 +12,19 @@ class ProductCategoryParentNotFound(Exception):
 
 class ProductCategoryHasChildren(Exception):
     pass
+
+
+class DuplicateProductTitle(Exception):
+    pass
+
+
+class DuplicateProductSku(Exception):
+    pass
+
+
+class ProductNotFound(Exception):
+    pass
+
+
+class ProductCategoryNotFoundForProduct(Exception):
+    pass

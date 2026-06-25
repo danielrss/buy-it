@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from app.config import get_settings
-from app.routers import health_router, product_category_router
+from app.routers import health_router, product_categories_router, products_router
 
 
 def create_app() -> FastAPI:
@@ -16,7 +16,8 @@ def create_app() -> FastAPI:
     )
 
     application.include_router(health_router.router, prefix="/v1")
-    application.include_router(product_category_router.router, prefix="/v1")
+    application.include_router(product_categories_router.router, prefix="/v1")
+    application.include_router(products_router.router, prefix="/v1")
     return application
 
 
