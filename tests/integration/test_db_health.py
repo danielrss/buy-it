@@ -21,14 +21,8 @@ def _fake_session(raises: bool = False):
 
 @pytest.mark.integration
 class TestDbHealth:
-    async def test_returns_200_when_db_is_up(
-        self, app: FastAPI, client: AsyncClient
-    ) -> None:
-        app.dependency_overrides[get_db_session] = _fake_session(raises=False)
-        try:
-            response = await client.get("/health/db")
-        finally:
-            app.dependency_overrides.clear()
+    async def test_returns_200_when_db_is_up(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/health/db")
         assert response.status_code == 200
         assert response.json() == {"status": "ok"}
 
@@ -36,8 +30,5 @@ class TestDbHealth:
         self, app: FastAPI, client: AsyncClient
     ) -> None:
         app.dependency_overrides[get_db_session] = _fake_session(raises=True)
-        try:
-            response = await client.get("/health/db")
-        finally:
-            app.dependency_overrides.clear()
+        response = await client.get("/v1/health/db")
         assert response.status_code == 503

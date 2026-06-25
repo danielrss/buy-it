@@ -15,6 +15,25 @@ services:
       timeout: 5s
       retries: 5
 
+  db-test:
+    image: postgres:17-alpine
+    profiles: ["test"]
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: buyit
+      POSTGRES_PASSWORD: buyit
+      POSTGRES_DB: buyit_test
+    tmpfs:
+      - /var/lib/postgresql/data
+    command: >
+      postgres -c fsync=off -c synchronous_commit=off -c full_page_writes=off
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U buyit -d buyit_test"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
   api:
     build: .
     ports:

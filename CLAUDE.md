@@ -44,6 +44,11 @@ just test-int    # tests/integration/ - through the ASGI app via httpx
 just test        # both
 ```
 
+Integration tests run against a real Postgres. `just test` / `just test-int`
+spin up an ephemeral `db-test` Compose service (profile `test`, tmpfs storage,
+fsync off, port 5433) before pytest and remove it afterwards - even on failure -
+without touching a running `just up` dev stack. Docker must be available.
+
 ## Project structure
 
 ```

@@ -23,16 +23,21 @@ down:
 logs:
     docker compose logs -f api
 
-# Run all tests
-test: check-python
-    uv run pytest -v
+# Run unit + integration tests (spins up an ephemeral test DB)
+test: test-unit test-int
 
-# Run unit tests only
+# Run unit tests only (no DB, no api)
 test-unit: check-python
     uv run pytest tests/unit -v
 
-# Run integration tests only
+# Run integration tests only (spins up an ephemeral test DB, always tears it down)
 test-int: check-python
+    #!/usr/bin/env bash
+    set -euo pipefail
+    docker compose --profile test up -d --wait db-test
+    trap 'docker compose --profile test rm -fsv db-test >/dev/null 2>&1 || true' EXIT
+    export POSTGRES_HOST=localhost POSTGRES_PORT=5433 POSTGRES_DB=buyit_test
+    uv run alembic upgrade head
     uv run pytest tests/integration -v
 
 # Run linting checks
