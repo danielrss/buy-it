@@ -59,11 +59,16 @@ just check       # lint + typecheck + unit tests
 
 ## Configuration
 
-Settings are read from environment variables. Available variables:
+Settings are read from environment variables (or `.env`). Available variables:
 
-| Variable      | Default       | Description             |
-|---------------|---------------|-------------------------|
-| `ENVIRONMENT` | `local`       | Runtime environment     |
+| Variable            | Default   | Description                        |
+|---------------------|-----------|------------------------------------|
+| `ENVIRONMENT`       | `local`   | Runtime environment                |
+| `POSTGRES_USER`     | `buyit`   | Postgres username                  |
+| `POSTGRES_PASSWORD` | `buyit`   | Postgres password                  |
+| `POSTGRES_DB`       | `buyit`   | Postgres database name             |
+| `POSTGRES_HOST`     | `db`      | Postgres host                      |
+| `POSTGRES_PORT`     | `5432`    | Postgres port                      |
 
 ## Architecture
 

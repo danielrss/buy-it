@@ -6,6 +6,7 @@ from alembic import context
 from sqlalchemy import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
+import app.models  # noqa: F401  # registers ORM models on Base.metadata
 from app.config import get_settings
 from app.infrastructure.db.base import Base
 

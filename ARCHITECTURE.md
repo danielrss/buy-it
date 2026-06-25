@@ -16,7 +16,7 @@ HTTP request
 └─────────────┘
 ```
 
-Architecture is kept simple for now, because we have limited business requirements. A Domain layer can be added below the service layer if needed.
+Architecture is kept simple for now, because we have limited business requirements. A Domain layer can be added below the service layer if needed. This should be decided ASAP, before having too much logic in the services.
 
 **Rule:** dependencies point inward. Routers depend on services; services depend on
 nothing above them. No logic leaks into routers; no HTTP concerns leak into services.
@@ -25,15 +25,14 @@ nothing above them. No logic leaks into routers; no HTTP concerns leak into serv
 
 | Folder | Role |
 |---|---|
-| `app/routers/` | FastAPI `APIRouter` — HTTP only: parse, validate, call service, serialize |
-| `app/services/` | Business logic — orchestration, rules, SQL queries via `AsyncSession` |
+| `app/routers/` | FastAPI `APIRouter` — HTTP only: parse, validate, call service |
+| `app/services/` | Business logic — orchestration, rules, SQL queries via `AsyncSession`, serialize into Pydantic models |
 | `app/models/` | SQLAlchemy ORM models — table definitions, inherit from `infrastructure/db/base.py` |
 | `app/schemas/` | Pydantic models — request bodies and response shapes |
 
 ## Current state
 
-Only the router layer exists. `deps.py` is the DI wiring point — the seam that
-receives services when the first feature lands. Nothing gets refactored then; you only add.
+All four layers are active. Product categories (`/v1/product-categories`) is the first implemented feature. `app/services/errors.py` holds shared domain exceptions. `deps.py` is the DI wiring point for all services.
 
 ## Example: product search
 

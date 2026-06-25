@@ -58,44 +58,44 @@ buy-it/
 │   ├── config.py           # pydantic-settings Settings + cached get_settings()
 │   ├── main.py             # create_app() factory; module-level app = create_app() for uvicorn
 │   ├── deps.py             # FastAPI DI wiring point - get_db_session() and future providers
-│   ├── infrastructure/
-│   │   └── db/
+│   ├── infrastructure/     # External services managed by this project
+│   │   └── db/             # Postgres db
 │   │       ├── base.py     # DeclarativeBase - all models inherit from this
 │   │       ├── engine.py   # cached AsyncEngine + async_sessionmaker
 │   │       └── health.py   # check_database(session) → bool (SELECT 1)
 │   ├── models/             # SQLAlchemy ORM models (inherit from infrastructure/db/base.py)
-│   ├── schemas/
-│   │   └── health_schema.py  # HealthResponse Pydantic model
-│   ├── services/           # Business logic; executes SQL directly via AsyncSession
-│   └── routers/
-│       └── health_router.py  # GET /health and GET /health/db
-├── migrations/             # Alembic; filenames are <epoch>_<slug>.py
+│   ├── schemas/            # Pydantic request/response models
+│   ├── services/           # Business logic + domain exceptions (errors.py)
+│   └── routers/            # FastAPI APIRouters
+├── migrations/             # Alembic migrations
 │   ├── env.py
 │   ├── script.py.mako
-│   └── versions/
+│   └── versions/           # Migration revision files - filenames are <epoch>_<slug>.py
 ├── tests/
-│   ├── conftest.py             # shared fixtures
-│   ├── unit/
-│   │   ├── test_config.py      # Settings defaults, env override, database_url
-│   │   └── test_db_health.py   # check_database() with fake AsyncSession
-│   └── integration/
-│       ├── conftest.py         # app + AsyncClient fixtures
+│   ├── conftest.py         # shared fixtures
+│   ├── unit/               # fast, no app/HTTP; mirrors app/ structure under services/
+│   │   ├── test_config.py
+│   │   ├── test_db_health.py
+│   │   └── services/
+│   └── integration/        # through ASGI app via httpx; mirrors app/ structure under routers/
+│       ├── conftest.py     # app + AsyncClient fixtures
 │       ├── test_health.py
-│       └── test_db_health.py   # /health/db with overridden get_db_session
-├── alembic.ini
-├── Dockerfile                  # multi-stage, uv, non-root user "app"
-├── docker-compose.yml          # api + db (postgres:18) + pgdata volume
-├── justfile                    # task shortcuts
-├── pyproject.toml              # deps + ruff + pyright + pytest config
-├── .python-version             # 3.13
-└── ARCHITECTURE.md             # target layering + product-search example
+│       ├── test_db_health.py
+│       └── routers/
+├── alembic.ini             # config for alembic
+├── Dockerfile              # multi-stage, uv, non-root user "app"
+├── docker-compose.yml      # api + db (postgres:18) + pgdata volume
+├── justfile                # task shortcuts
+├── pyproject.toml          # deps + ruff + pyright + pytest config
+├── .python-version         # 3.13
+└── ARCHITECTURE.md         # target layering + product-search example
 ```
 
 ### App factory pattern
 `create_app()` in `main.py` builds and returns the `FastAPI` instance. This keeps the app testable (each test gets a fresh instance) and the DI wiring clean. The module-level `app = create_app()` is only for uvicorn's entry point.
 
 ### DI wiring point
-`deps.py` is intentionally sparse now. It is the single place to add FastAPI `Depends()` providers as features land - services, DB sessions, etc.
+`deps.py` is the single place to add FastAPI `Depends()` providers - services, DB sessions, etc.
 
 ### Configuration
 `app/config.py` exports `get_settings()` (LRU-cached). Settings read from env or `.env`. Available variables: `ENVIRONMENT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_HOST` (default: `db`), `POSTGRES_PORT` (default: `5432`).
@@ -109,8 +109,6 @@ See `ARCHITECTURE.md` for the full pattern with a product-search example. The sh
 4. Wire the service into `deps.py` via `Depends()`.
 5. Add an `APIRouter` under `app/routers/` and register it in `create_app()`.
 6. Unit-test the service; integration-test the route.
-
-**Rule:** add layers with the first real feature - don't pre-build empty folders.
 
 ## Common commands
 
