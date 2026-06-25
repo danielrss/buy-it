@@ -2,7 +2,7 @@
 
 ## Project
 
-FastAPI backend for the buy-it e-commerce platform. Python 3.13, `src/` layout, managed with `uv`.
+FastAPI backend for the buy-it e-commerce platform. Python 3.13, flat `app/` layout, managed with `uv`.
 
 ## Libraries
 
@@ -45,13 +45,12 @@ just test        # both
 
 ```
 buy-it/
-├── src/app/
+├── app/
 │   ├── config.py           # pydantic-settings Settings + cached get_settings()
 │   ├── main.py             # create_app() factory; module-level app = create_app() for uvicorn
-│   └── api/
-│       ├── deps.py         # FastAPI DI wiring point - add Depends() providers here
-│       └── routes/
-│           └── health.py   # GET /health → {"status": "ok"}
+│   ├── deps.py             # FastAPI DI wiring point - add Depends() providers here
+│   └── routers/
+│       └── health.py       # GET /health → {"status": "ok"}
 ├── tests/
 │   ├── conftest.py             # shared fixtures (settings, etc.)
 │   ├── unit/
@@ -71,7 +70,7 @@ buy-it/
 `create_app()` in `main.py` builds and returns the `FastAPI` instance. This keeps the app testable (each test gets a fresh instance) and the DI wiring clean. The module-level `app = create_app()` is only for uvicorn's entry point.
 
 ### DI wiring point
-`api/deps.py` is intentionally sparse now. It is the single place to add FastAPI `Depends()` providers as features land - services, DB sessions, repositories, etc.
+`deps.py` is intentionally sparse now. It is the single place to add FastAPI `Depends()` providers as features land - services, DB sessions, repositories, etc.
 
 ### Configuration
 `core/config.py` exports `get_settings()` (LRU-cached). Settings read from env or `.env`. Available variables: `ENVIRONMENT`.
@@ -79,11 +78,11 @@ buy-it/
 
 See `ARCHITECTURE.md` for the full pattern with a product-search example. The short version:
 
-1. Add `src/app/domain/` - pure dataclasses/Protocols, zero framework imports.
-2. Add `src/app/services/` - business logic, depends on domain Protocols.
-3. Add `src/app/infrastructure/` - concrete repository implementations (SQL, etc.).
-4. Wire the service into `api/deps.py` via `Depends()`.
-5. Add an `APIRouter` under `api/routes/` and register it in `create_app()`.
+1. Add `app/domain/` - pure dataclasses/Protocols, zero framework imports.
+2. Add `app/services/` - business logic, depends on domain Protocols.
+3. Add `app/infrastructure/` - concrete repository implementations (SQL, etc.).
+4. Wire the service into `deps.py` via `Depends()`.
+5. Add an `APIRouter` under `app/routers/` and register it in `create_app()`.
 6. Unit-test the service with a fake in-memory repository; integration-test the route.
 
 **Rule:** add layers with the first real feature - don't pre-build empty folders.
@@ -98,8 +97,8 @@ See `ARCHITECTURE.md` for the full pattern with a product-search example. The sh
 | `just test` | Run all tests |
 | `just test-unit` | Unit tests only |
 | `just test-int` | Integration tests only |
-| `just lint` | `ruff check src tests` |
-| `just fmt` | `ruff format src tests` |
+| `just lint` | `ruff check app tests` |
+| `just fmt` | `ruff format app tests` |
 | `just typecheck` | `pyright` |
 | `just check` | lint + typecheck + test |
 | `just cleanup-local` | Remove `.venv`, tool caches, `__pycache__` |

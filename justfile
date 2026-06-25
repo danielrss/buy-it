@@ -35,7 +35,7 @@ test-int: check-python
 
 # Run linting checks
 lint: check-python
-    uv run ruff check src tests
+    uv run ruff check app tests
 
 # Run type checking
 typecheck: check-python
@@ -46,12 +46,12 @@ check: lint typecheck test
 
 # Run code formatting
 fmt: check-python
-    uv run ruff format src tests
+    uv run ruff format app tests
 
 # Remove venv, tool caches, and compiled Python files
 cleanup-local:
     rm -rf .venv .pytest_cache .ruff_cache
-    find src tests -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+    find app tests -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 
 # Remove all Docker artifacts created by this project (containers, images, volumes, networks)
 cleanup-docker:
