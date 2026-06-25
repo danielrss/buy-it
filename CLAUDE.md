@@ -84,7 +84,7 @@ buy-it/
 │       └── test_db_health.py   # /health/db with overridden get_db_session
 ├── alembic.ini
 ├── Dockerfile                  # multi-stage, uv, non-root user "app"
-├── docker-compose.yml          # api + db (postgres:17) + pgdata volume
+├── docker-compose.yml          # api + db (postgres:18) + pgdata volume
 ├── justfile                    # task shortcuts
 ├── pyproject.toml              # deps + ruff + pyright + pytest config
 ├── .python-version             # 3.13
