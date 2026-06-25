@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
-from app.routers import health
 from app.config import get_settings
+from app.routers import health
 
 
 def create_app() -> FastAPI:
@@ -15,8 +15,7 @@ def create_app() -> FastAPI:
         debug=settings.environment in DEV_ENVIRONMENTS,
     )
 
-    print(settings.environment)
-    application.include_router(health.router)
+    application.include_router(health.router, prefix="/v1")
     return application
 
 

@@ -7,8 +7,10 @@ REQUIRED_PYTHON := "3.13"
 check-python:
     @uv run python -c "import sys; v=str(sys.version_info.major)+'.'+str(sys.version_info.minor); req='{{ REQUIRED_PYTHON }}'; sys.exit(0) if v==req else (print('Python '+req+' required, got '+v) or sys.exit(1))"
 
-# Build images and start the app in Docker
+# Build images, apply DB migrations and start the app in Docker
 up:
+    docker compose up --build -d --wait db
+    just migrate
     docker compose up --build
 
 run: up
@@ -53,9 +55,21 @@ cleanup-local:
     rm -rf .venv .pytest_cache .ruff_cache
     find app tests -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 
-# Remove all Docker artifacts created by this project (containers, images, volumes, networks)
+# Remove project containers, built images, volumes, and networks
 cleanup-docker:
-    docker compose down --rmi all --volumes --remove-orphans
+    docker compose down --rmi local --volumes --remove-orphans
 
-# Cleanup local environment and Docker artifacts
+# Cleanup local environment and Docker artifacts (including DB)
 cleanup: cleanup-local cleanup-docker
+
+# Apply all pending migrations (runs against localhost:5432 - db container must be up)
+migrate: check-python
+    POSTGRES_HOST=localhost uv run alembic upgrade head
+
+# Generate a new autogenerate migration (usage: just migration name=add_products)
+migration name: check-python
+    POSTGRES_HOST=localhost uv run alembic revision --autogenerate -m "{{name}}"
+
+# Roll back the most recent migration
+migrate-down: check-python
+    POSTGRES_HOST=localhost uv run alembic downgrade -1

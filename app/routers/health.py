@@ -1,13 +1,26 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
-router = APIRouter(tags=["health"])
+from app.deps import get_db_session
+from app.infrastructure.db.health import check_database
+
+router = APIRouter(prefix="/health", tags=["health"])
 
 
 class HealthResponse(BaseModel):
     status: str
 
 
-@router.get("/health", response_model=HealthResponse)
-async def health() -> HealthResponse:
+@router.get("/", response_model=HealthResponse)
+async def get_health() -> HealthResponse:
+    return HealthResponse(status="ok")
+
+
+@router.get("/db", response_model=HealthResponse)
+async def get_db_health(
+    session: AsyncSession = Depends(get_db_session),
+) -> HealthResponse:
+    if not await check_database(session):
+        raise HTTPException(status_code=503, detail="database unavailable")
     return HealthResponse(status="ok")
