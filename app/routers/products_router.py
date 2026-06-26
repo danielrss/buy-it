@@ -14,6 +14,7 @@ from app.services.errors import (
     DuplicateProductTitle,
     ImageTooLarge,
     InvalidImageType,
+    InvalidImageUrl,
     ProductCategoryNotFoundForProduct,
     ProductNotFound,
 )
@@ -63,6 +64,7 @@ async def upload_product_image(
         status.HTTP_201_CREATED: {"description": "Product created"},
         status.HTTP_400_BAD_REQUEST: {"description": "Product category not found"},
         status.HTTP_409_CONFLICT: {"description": "Title or SKU already exists"},
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {"description": "Invalid image URL"},
     },
 )
 async def create_product(
@@ -74,6 +76,11 @@ async def create_product(
     except ProductCategoryNotFoundForProduct:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="product category not found"
+        ) from None
+    except InvalidImageUrl:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="invalid image url",
         ) from None
     except DuplicateProductTitle:
         raise HTTPException(
@@ -130,6 +137,7 @@ async def get_product(
         status.HTTP_400_BAD_REQUEST: {"description": "Product category not found"},
         status.HTTP_404_NOT_FOUND: {"description": "Product not found"},
         status.HTTP_409_CONFLICT: {"description": "Title or SKU already exists"},
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {"description": "Invalid image URL"},
     },
 )
 async def update_product(
@@ -146,6 +154,11 @@ async def update_product(
     except ProductCategoryNotFoundForProduct:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="product category not found"
+        ) from None
+    except InvalidImageUrl:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="invalid image url",
         ) from None
     except DuplicateProductTitle:
         raise HTTPException(

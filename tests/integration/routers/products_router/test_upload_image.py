@@ -5,7 +5,7 @@ import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
 
-from app.config import get_settings
+from app.config import get_media_settings
 from app.main import create_app
 
 BASE = "/v1/products/image"
@@ -17,10 +17,10 @@ _VALID_PNG = _PNG_HEADER + b"\x00" * 100
 @pytest.fixture
 def app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Generator[FastAPI]:
     monkeypatch.setenv("MEDIA_ROOT", str(tmp_path / "media"))
-    get_settings.cache_clear()
+    get_media_settings.cache_clear()
     result = create_app()
     yield result
-    get_settings.cache_clear()
+    get_media_settings.cache_clear()
 
 
 @pytest.mark.integration
@@ -32,7 +32,7 @@ class TestUploadProductImage:
         )
         assert resp.status_code == 201
         body = resp.json()
-        assert body["image_url"].startswith("/media/products/")
+        assert body["image_url"].startswith("http://localhost:8000/media/products/")
         assert body["image_url"].endswith(".png")
 
     async def test_uploaded_file_is_served(self, client: AsyncClient) -> None:

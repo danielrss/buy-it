@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import InstrumentedAttribute
 
+from app.config import MediaSettings
 from app.infrastructure.logging.logger import logger
 from app.infrastructure.storage.file_storage import (
     IMAGE_CONTENT_TYPES,
@@ -28,22 +29,33 @@ from app.services.errors import (
     DuplicateProductTitle,
     ImageTooLarge,
     InvalidImageType,
+    InvalidImageUrl,
     ProductCategoryNotFoundForProduct,
     ProductNotFound,
 )
-from app.services.utils import escape_like_operator_value
+from app.services.utils import (
+    escape_like_operator_value,
+    to_absolute_media_url,
+    to_relative_media_url,
+)
 
 
 class ProductService:
     def __init__(
         self,
         session: AsyncSession,
+        media_settings: MediaSettings,
         storage: FileStorage | None = None,
-        max_image_bytes: int = 1024 * 1024,
     ) -> None:
         self._session = session
         self._storage = storage
-        self._max_image_bytes = max_image_bytes
+        self._max_image_bytes = media_settings.max_image_bytes
+        self._media_base_url = media_settings.media_base_url
+
+    def _to_read(self, product: Product) -> ProductRead:
+        read = ProductRead.model_validate(product)
+        read.image_url = to_absolute_media_url(read.image_url, self._media_base_url)
+        return read
 
     async def _validate_category(self, product_category_id: uuid.UUID) -> None:
         category = await self._session.get(ProductCategory, product_category_id)
@@ -80,7 +92,12 @@ class ProductService:
         product_model.description = data.description
         product_model.sku = data.sku
         product_model.price = data.price
-        product_model.image_url = data.image_url
+        try:
+            product_model.image_url = to_relative_media_url(
+                data.image_url, self._media_base_url
+            )
+        except ValueError as exc:
+            raise InvalidImageUrl from exc
         product_model.product_category_id = data.product_category_id
         return product_model
 
@@ -107,13 +124,13 @@ class ProductService:
             await self._session.rollback()
             logger.exception("There was a database error while creating a product")
             raise
-        return ProductRead.model_validate(product)
+        return self._to_read(product)
 
     async def get(self, id: uuid.UUID) -> ProductRead:
         product = await self._session.get(Product, id)
         if product is None:
             raise ProductNotFound
-        return ProductRead.model_validate(product)
+        return self._to_read(product)
 
     async def list(self, params: ProductListQuery) -> list[ProductRead]:
         stmt = select(Product)
@@ -161,7 +178,7 @@ class ProductService:
             )
 
         result = await self._session.execute(stmt)
-        return [ProductRead.model_validate(p) for p in result.scalars().all()]
+        return [self._to_read(p) for p in result.scalars().all()]
 
     async def update(self, id: uuid.UUID, data: ProductWrite) -> ProductRead:
         product = await self._session.get(Product, id)
@@ -183,7 +200,7 @@ class ProductService:
             await self._session.rollback()
             logger.exception("There was a database error while updating a product")
             raise
-        return ProductRead.model_validate(product)
+        return self._to_read(product)
 
     async def delete(self, id: uuid.UUID) -> None:
         product = await self._session.get(Product, id)
@@ -210,7 +227,7 @@ class ProductService:
         # oversized uploads without buffering the whole payload.
         data = await file.read(self._max_image_bytes + 1)
         try:
-            return await storage.save(
+            saved = await storage.save(
                 data,
                 path,
                 content_type=content_type,
@@ -223,3 +240,5 @@ class ProductService:
         except OSError:
             logger.exception("There was an error while uploading a product image")
             raise
+
+        return to_absolute_media_url(saved, self._media_base_url) or saved

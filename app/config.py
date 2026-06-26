@@ -13,10 +13,6 @@ class Settings(BaseSettings):
     postgres_host: str = "db"
     postgres_port: int = 5432
 
-    media_root: Path = Path("media")
-    media_url_prefix: str = "/media"
-    max_image_bytes: int = 1024 * 1024
-
     @property
     def database_url(self) -> str:
         return (
@@ -25,6 +21,18 @@ class Settings(BaseSettings):
         )
 
 
+class MediaSettings(BaseSettings):
+    media_root: Path = Path("media")
+    media_url_prefix: str = "/media"
+    media_base_url: str = "http://localhost:8000"
+    max_image_bytes: int = 1024 * 1024
+
+
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+@lru_cache
+def get_media_settings() -> MediaSettings:
+    return MediaSettings()

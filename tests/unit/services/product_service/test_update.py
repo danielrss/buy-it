@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from app.config import MediaSettings
 from app.schemas.product_schema import ProductRead, ProductWrite
 from app.services.errors import (
     DuplicateProductSku,
@@ -33,7 +34,9 @@ def _write(
 
 @pytest.mark.unit
 class TestProductServiceUpdate:
-    async def test_update_returns_updated_product_read(self) -> None:
+    async def test_update_returns_updated_product_read(
+        self, media_settings: MediaSettings
+    ) -> None:
         session = AsyncMock()
         product_id = uuid.uuid4()
         category_id = uuid.uuid4()
@@ -41,7 +44,7 @@ class TestProductServiceUpdate:
         mock_product.id = product_id
         session.get.return_value = mock_product
         session.scalar.return_value = None
-        service = ProductService(session)
+        service = ProductService(session, media_settings)
 
         data = _write(
             title="Updated Widget",
@@ -56,51 +59,63 @@ class TestProductServiceUpdate:
         assert result.title == "Updated Widget"
         assert result.price == Decimal("19.99")
 
-    async def test_update_raises_not_found_when_product_missing(self) -> None:
+    async def test_update_raises_not_found_when_product_missing(
+        self, media_settings: MediaSettings
+    ) -> None:
         session = AsyncMock()
         session.get.return_value = None
-        service = ProductService(session)
+        service = ProductService(session, media_settings)
 
         with pytest.raises(ProductNotFound):
             await service.update(uuid.uuid4(), _write())
 
-    async def test_update_raises_duplicate_title_when_title_exists(self) -> None:
+    async def test_update_raises_duplicate_title_when_title_exists(
+        self, media_settings: MediaSettings
+    ) -> None:
         session = AsyncMock()
         session.scalar.return_value = MagicMock()
-        service = ProductService(session)
+        service = ProductService(session, media_settings)
 
         with pytest.raises(DuplicateProductTitle):
             await service.update(uuid.uuid4(), _write())
 
-    async def test_update_raises_duplicate_sku_when_sku_exists(self) -> None:
+    async def test_update_raises_duplicate_sku_when_sku_exists(
+        self, media_settings: MediaSettings
+    ) -> None:
         session = AsyncMock()
         session.scalar.side_effect = [None, MagicMock()]
-        service = ProductService(session)
+        service = ProductService(session, media_settings)
 
         with pytest.raises(DuplicateProductSku):
             await service.update(uuid.uuid4(), _write())
 
-    async def test_update_raises_duplicate_title_on_integrity_error(self) -> None:
+    async def test_update_raises_duplicate_title_on_integrity_error(
+        self, media_settings: MediaSettings
+    ) -> None:
         session = AsyncMock()
         session.scalar.return_value = None
         session.commit.side_effect = IntegrityError(None, None, Exception())
-        service = ProductService(session)
+        service = ProductService(session, media_settings)
 
         with pytest.raises(DuplicateProductTitle):
             await service.update(uuid.uuid4(), _write())
 
-    async def test_update_logs_and_reraises_sqlalchemy_error(self) -> None:
+    async def test_update_logs_and_reraises_sqlalchemy_error(
+        self, media_settings: MediaSettings
+    ) -> None:
         session = AsyncMock()
         session.scalar.return_value = None
         session.commit.side_effect = SQLAlchemyError("boom")
-        service = ProductService(session)
+        service = ProductService(session, media_settings)
 
         with pytest.raises(SQLAlchemyError):
             await service.update(uuid.uuid4(), _write())
 
         session.rollback.assert_awaited()
 
-    async def test_update_raises_category_not_found_when_category_missing(self) -> None:
+    async def test_update_raises_category_not_found_when_category_missing(
+        self, media_settings: MediaSettings
+    ) -> None:
         session = AsyncMock()
         mock_product = MagicMock()
 
@@ -115,7 +130,7 @@ class TestProductServiceUpdate:
             return None
 
         session.get.side_effect = _get_side_effect
-        service = ProductService(session)
+        service = ProductService(session, media_settings)
 
         with pytest.raises(ProductCategoryNotFoundForProduct):
             await service.update(uuid.uuid4(), _write())

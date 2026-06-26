@@ -36,3 +36,7 @@ class InvalidImageType(Exception):
 
 class ImageTooLarge(Exception):
     pass
+
+
+class InvalidImageUrl(Exception):
+    pass

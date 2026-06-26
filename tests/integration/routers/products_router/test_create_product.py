@@ -41,6 +41,7 @@ class TestCreateProduct:
 
     async def test_create_with_all_optional_fields(self, client: AsyncClient) -> None:
         cat_id = await _create_category(client, "Gadgets")
+        image_url = "http://localhost:8000/media/products/phone.jpg"
         resp = await client.post(
             BASE,
             json={
@@ -48,14 +49,32 @@ class TestCreateProduct:
                 "description": "A smartphone",
                 "sku": "PHN-001",
                 "price": "499.00",
-                "image_url": "https://example.com/phone.jpg",
+                "image_url": image_url,
                 "product_category_id": cat_id,
             },
         )
         assert resp.status_code == 201
         body = resp.json()
         assert body["description"] == "A smartphone"
-        assert body["image_url"] == "https://example.com/phone.jpg"
+        assert body["image_url"] == image_url
+
+    async def test_create_with_foreign_image_url_returns_422(
+        self, client: AsyncClient
+    ) -> None:
+        cat_id = await _create_category(client, "Foreign")
+        resp = await client.post(
+            BASE,
+            json={
+                "title": "Imported",
+                "description": None,
+                "sku": "IMP-001",
+                "price": "10.00",
+                "image_url": "https://example.com/phone.jpg",
+                "product_category_id": cat_id,
+            },
+        )
+        assert resp.status_code == 422
+        assert resp.json()["detail"] == "invalid image url"
 
     async def test_create_duplicate_title_returns_409(
         self, client: AsyncClient

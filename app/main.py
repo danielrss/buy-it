@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from app.config import get_settings
+from app.config import get_media_settings, get_settings
 from app.routers import health_router, product_categories_router, products_router
 
 
@@ -20,10 +20,11 @@ def create_app() -> FastAPI:
     application.include_router(product_categories_router.router, prefix="/v1")
     application.include_router(products_router.router, prefix="/v1")
 
-    settings.media_root.mkdir(parents=True, exist_ok=True)
+    media_settings = get_media_settings()
+    media_settings.media_root.mkdir(parents=True, exist_ok=True)
     application.mount(
-        settings.media_url_prefix,
-        StaticFiles(directory=settings.media_root),
+        media_settings.media_url_prefix,
+        StaticFiles(directory=media_settings.media_root),
         name="media",
     )
 

@@ -178,7 +178,7 @@ class TestListProducts:
             sku="WI-001",
             price="10.00",
             category_id=cat,
-            image_url="https://example.com/img.jpg",
+            image_url="http://localhost:8000/media/products/img.jpg",
         )
         await _create_product(
             client, title="NoImg", sku="NI-001", price="10.00", category_id=cat
@@ -199,7 +199,7 @@ class TestListProducts:
             sku="WI2-001",
             price="10.00",
             category_id=cat,
-            image_url="https://example.com/img2.jpg",
+            image_url="http://localhost:8000/media/products/img2.jpg",
         )
         await _create_product(
             client, title="NoImg2", sku="NI2-001", price="10.00", category_id=cat

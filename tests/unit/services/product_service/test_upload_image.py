@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from app.config import MediaSettings
 from app.infrastructure.storage.file_storage import (
     ContentType,
     FileStorage,
@@ -57,61 +58,94 @@ class _RaisingStorage(FileStorage):
         raise NotImplementedError
 
 
-def _service(storage: FileStorage) -> ProductService:
-    return ProductService(session=AsyncMock(), storage=storage, max_image_bytes=_MAX)
+def _service(storage: FileStorage, media_settings: MediaSettings) -> ProductService:
+    return ProductService(AsyncMock(), media_settings, storage)
 
 
 @pytest.mark.unit
 class TestUploadImage:
-    async def test_returns_url_from_storage(self) -> None:
+    async def test_returns_url_from_storage(
+        self, media_settings: MediaSettings
+    ) -> None:
         storage = _RecordingStorage()
-        result = await _service(storage).upload_image(_upload_file(_PNG, "image/png"))
-        assert result == "/media/products/stub.png"
+        result = await _service(storage, media_settings).upload_image(
+            _upload_file(_PNG, "image/png")
+        )
+        base = media_settings.media_base_url
+        assert result == f"{base}/media/products/stub.png"
 
-    async def test_builds_products_path_with_uuid_name(self) -> None:
+    async def test_builds_products_path_with_uuid_name(
+        self, media_settings: MediaSettings
+    ) -> None:
         storage = _RecordingStorage()
-        await _service(storage).upload_image(_upload_file(_PNG, "image/png"))
+        await _service(storage, media_settings).upload_image(
+            _upload_file(_PNG, "image/png")
+        )
         path = storage.calls[0]["path"]
         assert path.startswith("products/")
         # name is a bare uuid4; the storage layer appends the extension
         uuid.UUID(path.removeprefix("products/"))
 
-    async def test_delegates_content_type_and_max_bytes(self) -> None:
+    async def test_delegates_content_type_and_max_bytes(
+        self, media_settings: MediaSettings
+    ) -> None:
         storage = _RecordingStorage()
-        await _service(storage).upload_image(_upload_file(_PNG, "image/png"))
+        await _service(storage, media_settings).upload_image(
+            _upload_file(_PNG, "image/png")
+        )
         call = storage.calls[0]
         assert call["content_type"] is ContentType.PNG
         assert call["max_bytes"] == _MAX
         assert call["data"] == _PNG
 
-    async def test_unknown_content_type_raises_without_calling_storage(self) -> None:
+    async def test_unknown_content_type_raises_without_calling_storage(
+        self, media_settings: MediaSettings
+    ) -> None:
         storage = _RecordingStorage()
         with pytest.raises(InvalidImageType):
-            await _service(storage).upload_image(_upload_file(_PNG, "image/gif"))
+            await _service(storage, media_settings).upload_image(
+                _upload_file(_PNG, "image/gif")
+            )
         assert storage.calls == []
 
-    async def test_missing_content_type_raises(self) -> None:
+    async def test_missing_content_type_raises(
+        self, media_settings: MediaSettings
+    ) -> None:
         storage = _RecordingStorage()
         with pytest.raises(InvalidImageType):
-            await _service(storage).upload_image(_upload_file(_PNG, None))
+            await _service(storage, media_settings).upload_image(
+                _upload_file(_PNG, None)
+            )
         assert storage.calls == []
 
-    async def test_unsupported_file_type_translated(self) -> None:
+    async def test_unsupported_file_type_translated(
+        self, media_settings: MediaSettings
+    ) -> None:
         storage = _RaisingStorage(UnsupportedFileType())
         with pytest.raises(InvalidImageType):
-            await _service(storage).upload_image(_upload_file(_PNG, "image/png"))
+            await _service(storage, media_settings).upload_image(
+                _upload_file(_PNG, "image/png")
+            )
 
-    async def test_file_too_large_translated(self) -> None:
+    async def test_file_too_large_translated(
+        self, media_settings: MediaSettings
+    ) -> None:
         storage = _RaisingStorage(FileTooLarge())
         with pytest.raises(ImageTooLarge):
-            await _service(storage).upload_image(_upload_file(_PNG, "image/png"))
+            await _service(storage, media_settings).upload_image(
+                _upload_file(_PNG, "image/png")
+            )
 
-    async def test_no_storage_raises_runtime_error(self) -> None:
-        service = ProductService(session=AsyncMock(), storage=None)
+    async def test_no_storage_raises_runtime_error(
+        self, media_settings: MediaSettings
+    ) -> None:
+        service = ProductService(AsyncMock(), media_settings, storage=None)
         with pytest.raises(RuntimeError):
             await service.upload_image(_upload_file(_PNG, "image/png"))
 
-    async def test_io_error_is_reraised(self) -> None:
+    async def test_io_error_is_reraised(self, media_settings: MediaSettings) -> None:
         storage = _RaisingStorage(OSError("disk full"))
         with pytest.raises(OSError):
-            await _service(storage).upload_image(_upload_file(_PNG, "image/png"))
+            await _service(storage, media_settings).upload_image(
+                _upload_file(_PNG, "image/png")
+            )
