@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.deps import get_product_service
-from app.schemas.product_schema import ProductRead, ProductWrite
+from app.schemas.product_schema import ProductListQuery, ProductRead, ProductWrite
 from app.services.errors import (
     DuplicateProductSku,
     DuplicateProductTitle,
@@ -54,9 +54,10 @@ async def create_product(
     responses={status.HTTP_200_OK: {"description": "List of products"}},
 )
 async def list_products(
+    query: ProductListQuery = Depends(),
     service: ProductService = Depends(get_product_service),
 ) -> list[ProductRead]:
-    return await service.list()
+    return await service.list(query)
 
 
 @router.get(

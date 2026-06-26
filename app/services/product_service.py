@@ -1,12 +1,18 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.product import Product
 from app.models.product_category import ProductCategory
-from app.schemas.product_schema import ProductRead, ProductWrite
+from app.schemas.product_schema import (
+    ProductListQuery,
+    ProductRead,
+    ProductSortBy,
+    ProductWrite,
+    SortOrder,
+)
 from app.services.errors import (
     DuplicateProductSku,
     DuplicateProductTitle,
@@ -72,8 +78,56 @@ class ProductService:
             raise ProductNotFound
         return ProductRead.model_validate(product)
 
-    async def list(self) -> list[ProductRead]:
-        result = await self._session.execute(select(Product).order_by(Product.title))
+    async def list(self, params: ProductListQuery) -> list[ProductRead]:
+        stmt = select(Product)
+        conditions = []
+
+        if params.search:
+            q = params.search
+            sku_pat = (
+                "%"
+                + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+                + "%"
+            )
+            conditions.append(
+                or_(
+                    Product.title.op("%")(q),
+                    Product.description.op("%>")(q),
+                    Product.sku.ilike(sku_pat),
+                )
+            )
+        if params.product_category_id is not None:
+            conditions.append(Product.product_category_id == params.product_category_id)
+        if params.price_min is not None:
+            conditions.append(Product.price >= params.price_min)
+        if params.price_max is not None:
+            conditions.append(Product.price <= params.price_max)
+        if params.with_image is not None:
+            conditions.append(
+                Product.image_url.is_not(None)
+                if params.with_image
+                else Product.image_url.is_(None)
+            )
+        if conditions:
+            stmt = stmt.where(*conditions)
+
+        if params.search:
+            relevance = func.greatest(
+                func.similarity(Product.title, params.search),
+                func.word_similarity(params.search, Product.description),
+            )
+            stmt = stmt.order_by(relevance.desc(), Product.title)
+        else:
+            col = (
+                Product.price
+                if params.sort_by is ProductSortBy.PRICE
+                else Product.title
+            )
+            stmt = stmt.order_by(
+                col.asc() if params.sort_order is SortOrder.ASC else col.desc()
+            )
+
+        result = await self._session.execute(stmt)
         return [ProductRead.model_validate(p) for p in result.scalars().all()]
 
     async def update(self, id: uuid.UUID, data: ProductWrite) -> ProductRead:

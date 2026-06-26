@@ -53,7 +53,7 @@ check: lint typecheck test-unit
 
 # Run code formatting
 fmt: check-python
-    uv run ruff format app tests
+    uv run ruff format app tests migrations
 
 # Remove venv, tool caches, and compiled Python files
 cleanup-local:

@@ -1,7 +1,18 @@
 import uuid
 from decimal import Decimal
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+class ProductSortBy(StrEnum):
+    TITLE = "title"
+    PRICE = "price"
+
+
+class SortOrder(StrEnum):
+    ASC = "asc"
+    DESC = "desc"
 
 
 class ProductWrite(BaseModel):
@@ -23,3 +34,13 @@ class ProductRead(BaseModel):
     price: Decimal
     image_url: str | None
     product_category_id: uuid.UUID
+
+
+class ProductListQuery(BaseModel):
+    search: str | None = None
+    price_min: int | None = Field(default=None, ge=0)
+    price_max: int | None = Field(default=None, ge=0)
+    with_image: bool | None = None
+    product_category_id: uuid.UUID | None = None
+    sort_by: ProductSortBy = ProductSortBy.TITLE
+    sort_order: SortOrder = SortOrder.ASC
