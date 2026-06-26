@@ -110,3 +110,8 @@ class TestUploadImage:
         service = ProductService(session=AsyncMock(), storage=None)
         with pytest.raises(RuntimeError):
             await service.upload_image(_upload_file(_PNG, "image/png"))
+
+    async def test_io_error_is_reraised(self) -> None:
+        storage = _RaisingStorage(OSError("disk full"))
+        with pytest.raises(OSError):
+            await _service(storage).upload_image(_upload_file(_PNG, "image/png"))

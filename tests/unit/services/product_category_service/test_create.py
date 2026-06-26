@@ -2,7 +2,7 @@ import uuid
 from unittest.mock import AsyncMock
 
 import pytest
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.schemas.product_category_schema import (
     ProductCategoryRead,
@@ -56,3 +56,13 @@ class TestProductCategoryServiceCreate:
 
         with pytest.raises(DuplicateProductCategoryName):
             await service.create(_write())
+
+    async def test_create_logs_and_reraises_sqlalchemy_error(self) -> None:
+        session = AsyncMock()
+        session.commit.side_effect = SQLAlchemyError("boom")
+        service = ProductCategoryService(session)
+
+        with pytest.raises(SQLAlchemyError):
+            await service.create(_write())
+
+        session.rollback.assert_awaited()

@@ -2,9 +2,11 @@ import uuid
 
 from fastapi import UploadFile
 from sqlalchemy import func, or_, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import InstrumentedAttribute
 
+from app.infrastructure.logging.logger import logger
 from app.infrastructure.storage.file_storage import (
     IMAGE_CONTENT_TYPES,
     ContentType,
@@ -29,6 +31,7 @@ from app.services.errors import (
     ProductCategoryNotFoundForProduct,
     ProductNotFound,
 )
+from app.services.utils import escape_like_operator_value
 
 
 class ProductService:
@@ -67,19 +70,32 @@ class ProductService:
         if result is not None:
             raise DuplicateProductSku
 
+    def _create_or_update_product_model(
+        self, data: ProductWrite, product_model: Product | None = None
+    ) -> Product:
+        if product_model is None:
+            product_model = Product()
+
+        product_model.title = data.title
+        product_model.description = data.description
+        product_model.sku = data.sku
+        product_model.price = data.price
+        product_model.image_url = data.image_url
+        product_model.product_category_id = data.product_category_id
+        return product_model
+
+    def _get_sort_column(self, sort_by: ProductSortBy) -> InstrumentedAttribute:
+        if sort_by == ProductSortBy.PRICE:
+            return Product.price
+        else:
+            return Product.title
+
     async def create(self, data: ProductWrite) -> ProductRead:
         await self._validate_category(data.product_category_id)
         await self._check_duplicate_title(data.title)
         await self._check_duplicate_sku(data.sku)
 
-        product = Product(
-            title=data.title,
-            description=data.description,
-            sku=data.sku,
-            price=data.price,
-            image_url=data.image_url,
-            product_category_id=data.product_category_id,
-        )
+        product = self._create_or_update_product_model(data)
         self._session.add(product)
         try:
             await self._session.commit()
@@ -87,6 +103,10 @@ class ProductService:
         except IntegrityError:
             await self._session.rollback()
             raise DuplicateProductTitle from None
+        except SQLAlchemyError:
+            await self._session.rollback()
+            logger.exception("There was a database error while creating a product")
+            raise
         return ProductRead.model_validate(product)
 
     async def get(self, id: uuid.UUID) -> ProductRead:
@@ -99,13 +119,10 @@ class ProductService:
         stmt = select(Product)
         conditions = []
 
+        # Set search and filter conditions
         if params.search:
             q = params.search
-            sku_pat = (
-                "%"
-                + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-                + "%"
-            )
+            sku_pat = "%" + escape_like_operator_value(q) + "%"
             conditions.append(
                 or_(
                     Product.title.op("%")(q),
@@ -128,6 +145,7 @@ class ProductService:
         if conditions:
             stmt = stmt.where(*conditions)
 
+        # Set sort order
         if params.search:
             relevance = func.greatest(
                 func.similarity(Product.title, params.search),
@@ -135,13 +153,11 @@ class ProductService:
             )
             stmt = stmt.order_by(relevance.desc(), Product.title)
         else:
-            col = (
-                Product.price
-                if params.sort_by is ProductSortBy.PRICE
-                else Product.title
-            )
+            sort_col = self._get_sort_column(params.sort_by)
             stmt = stmt.order_by(
-                col.asc() if params.sort_order is SortOrder.ASC else col.desc()
+                sort_col.asc()
+                if params.sort_order is SortOrder.ASC
+                else sort_col.desc()
             )
 
         result = await self._session.execute(stmt)
@@ -156,18 +172,17 @@ class ProductService:
         await self._check_duplicate_title(data.title, exclude_id=id)
         await self._check_duplicate_sku(data.sku, exclude_id=id)
 
-        product.title = data.title
-        product.description = data.description
-        product.sku = data.sku
-        product.price = data.price
-        product.image_url = data.image_url
-        product.product_category_id = data.product_category_id
+        product = self._create_or_update_product_model(data, product)
         try:
             await self._session.commit()
             await self._session.refresh(product)
         except IntegrityError:
             await self._session.rollback()
             raise DuplicateProductTitle from None
+        except SQLAlchemyError:
+            await self._session.rollback()
+            logger.exception("There was a database error while updating a product")
+            raise
         return ProductRead.model_validate(product)
 
     async def delete(self, id: uuid.UUID) -> None:
@@ -205,3 +220,6 @@ class ProductService:
             raise InvalidImageType from None
         except FileTooLarge:
             raise ImageTooLarge from None
+        except OSError:
+            logger.exception("There was an error while uploading a product image")
+            raise
