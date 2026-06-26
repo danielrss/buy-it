@@ -1,9 +1,17 @@
 import uuid
 
+from fastapi import UploadFile
 from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.infrastructure.storage.file_storage import (
+    IMAGE_CONTENT_TYPES,
+    ContentType,
+    FileStorage,
+    FileTooLarge,
+    UnsupportedFileType,
+)
 from app.models.product import Product
 from app.models.product_category import ProductCategory
 from app.schemas.product_schema import (
@@ -16,14 +24,23 @@ from app.schemas.product_schema import (
 from app.services.errors import (
     DuplicateProductSku,
     DuplicateProductTitle,
+    ImageTooLarge,
+    InvalidImageType,
     ProductCategoryNotFoundForProduct,
     ProductNotFound,
 )
 
 
 class ProductService:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        storage: FileStorage | None = None,
+        max_image_bytes: int = 1024 * 1024,
+    ) -> None:
         self._session = session
+        self._storage = storage
+        self._max_image_bytes = max_image_bytes
 
     async def _validate_category(self, product_category_id: uuid.UUID) -> None:
         category = await self._session.get(ProductCategory, product_category_id)
@@ -159,3 +176,32 @@ class ProductService:
             raise ProductNotFound
         await self._session.delete(product)
         await self._session.commit()
+
+    async def upload_image(self, file: UploadFile) -> str:
+        storage = self._storage
+        if storage is None:
+            raise RuntimeError("no storage configured")
+
+        try:
+            content_type = ContentType(file.content_type or "")
+        except ValueError:
+            raise InvalidImageType from None
+
+        if content_type not in IMAGE_CONTENT_TYPES:
+            raise InvalidImageType from None
+
+        path = f"products/{uuid.uuid4()}"
+        # Read one byte past the limit so the storage size check can reject
+        # oversized uploads without buffering the whole payload.
+        data = await file.read(self._max_image_bytes + 1)
+        try:
+            return await storage.save(
+                data,
+                path,
+                content_type=content_type,
+                max_bytes=self._max_image_bytes,
+            )
+        except UnsupportedFileType:
+            raise InvalidImageType from None
+        except FileTooLarge:
+            raise ImageTooLarge from None

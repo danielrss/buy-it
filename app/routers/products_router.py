@@ -1,18 +1,57 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 
 from app.deps import get_product_service
-from app.schemas.product_schema import ProductListQuery, ProductRead, ProductWrite
+from app.schemas.product_schema import (
+    ProductImageUploadResponse,
+    ProductListQuery,
+    ProductRead,
+    ProductWrite,
+)
 from app.services.errors import (
     DuplicateProductSku,
     DuplicateProductTitle,
+    ImageTooLarge,
+    InvalidImageType,
     ProductCategoryNotFoundForProduct,
     ProductNotFound,
 )
 from app.services.product_service import ProductService
 
 router = APIRouter(prefix="/products", tags=["products"])
+
+
+@router.post(
+    "/image",
+    response_model=ProductImageUploadResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload a product image",
+    responses={
+        status.HTTP_201_CREATED: {"description": "Image uploaded"},
+        status.HTTP_413_CONTENT_TOO_LARGE: {"description": "File too large"},
+        status.HTTP_415_UNSUPPORTED_MEDIA_TYPE: {
+            "description": "Unsupported image type"
+        },
+    },
+)
+async def upload_product_image(
+    file: UploadFile,
+    service: ProductService = Depends(get_product_service),
+) -> ProductImageUploadResponse:
+    try:
+        url = await service.upload_image(file)
+    except InvalidImageType:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="unsupported image type",
+        ) from None
+    except ImageTooLarge:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail="image too large",
+        ) from None
+    return ProductImageUploadResponse(image_url=url)
 
 
 @router.post(

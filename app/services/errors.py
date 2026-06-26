@@ -28,3 +28,11 @@ class ProductNotFound(Exception):
 
 class ProductCategoryNotFoundForProduct(Exception):
     pass
+
+
+class InvalidImageType(Exception):
+    pass
+
+
+class ImageTooLarge(Exception):
+    pass

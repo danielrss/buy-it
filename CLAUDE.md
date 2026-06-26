@@ -59,10 +59,13 @@ buy-it/
 │   ├── main.py             # create_app() factory; module-level app = create_app() for uvicorn
 │   ├── deps.py             # FastAPI DI wiring point - get_db_session() and future providers
 │   ├── infrastructure/     # External services managed by this project
-│   │   └── db/             # Postgres db
-│   │       ├── base.py     # DeclarativeBase - all models inherit from this
-│   │       ├── engine.py   # cached AsyncEngine + async_sessionmaker
-│   │       └── health.py   # check_database(session) → bool (SELECT 1)
+│   │   ├── db/             # Postgres db
+│   │   │   ├── base.py     # DeclarativeBase - all models inherit from this
+│   │   │   ├── engine.py   # cached AsyncEngine + async_sessionmaker
+│   │   │   └── health.py   # check_database(session) → bool (SELECT 1)
+│   │   └── storage/        # File storage abstraction
+│   │       ├── file_storage.py        # FileStorage ABC + ContentType enum + validation
+│   │       └── local_file_storage.py  # LocalFileStorage - filesystem backend
 │   ├── models/             # SQLAlchemy ORM models (inherit from infrastructure/db/base.py)
 │   ├── schemas/            # Pydantic request/response models
 │   ├── services/           # Business logic + domain exceptions (errors.py)
@@ -98,7 +101,7 @@ buy-it/
 `deps.py` is the single place to add FastAPI `Depends()` providers - services, DB sessions, etc.
 
 ### Configuration
-`app/config.py` exports `get_settings()` (LRU-cached). Settings read from env or `.env`. Available variables: `ENVIRONMENT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_HOST` (default: `db`), `POSTGRES_PORT` (default: `5432`).
+`app/config.py` exports `get_settings()` (LRU-cached). Settings read from env or `.env`. Available variables: `ENVIRONMENT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_HOST` (default: `db`), `POSTGRES_PORT` (default: `5432`), `MEDIA_ROOT` (default: `media`), `MEDIA_URL_PREFIX` (default: `/media`), `MAX_IMAGE_BYTES` (default: `1048576`).
 ## Adding a new feature
 
 See `ARCHITECTURE.md` for the full pattern with a product-search example. The short version:

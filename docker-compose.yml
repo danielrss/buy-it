@@ -45,11 +45,13 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_PORT: ${POSTGRES_PORT}
+      MEDIA_ROOT: /app/media
     env_file:
       - path: .env
         required: false
     volumes:
       - ./app:/app/app
+      - media:/app/media
     depends_on:
       db:
         condition: service_healthy
@@ -57,3 +59,4 @@ services:
 
 volumes:
   pgdata: {}
+  media: {}

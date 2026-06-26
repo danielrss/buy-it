@@ -4,15 +4,12 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.common import SortOrder
+
 
 class ProductSortBy(StrEnum):
     TITLE = "title"
     PRICE = "price"
-
-
-class SortOrder(StrEnum):
-    ASC = "asc"
-    DESC = "desc"
 
 
 class ProductWrite(BaseModel):
@@ -44,3 +41,9 @@ class ProductListQuery(BaseModel):
     product_category_id: uuid.UUID | None = None
     sort_by: ProductSortBy = ProductSortBy.PRICE
     sort_order: SortOrder = SortOrder.ASC
+
+
+class ProductImageUploadResponse(BaseModel):
+    image_url: str = Field(
+        examples=["/media/products/0192f3a1-e4b0-7000-8000-000000000000.jpg"]
+    )
