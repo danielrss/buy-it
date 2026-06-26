@@ -19,7 +19,7 @@ class ProductWrite(BaseModel):
     title: str
     description: str | None
     sku: str
-    price: Decimal = Field(gt=0)
+    price: Decimal = Field(gt=0, examples=[Decimal("19.99")])
     image_url: str | None
     product_category_id: uuid.UUID
 
@@ -31,7 +31,7 @@ class ProductRead(BaseModel):
     title: str
     description: str | None
     sku: str
-    price: Decimal
+    price: Decimal = Field(examples=[Decimal("19.99")])
     image_url: str | None
     product_category_id: uuid.UUID
 
