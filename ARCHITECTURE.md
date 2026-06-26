@@ -29,10 +29,11 @@ nothing above them. No logic leaks into routers; no HTTP concerns leak into serv
 | `app/services/` | Business logic — orchestration, rules, SQL queries via `AsyncSession`, serialize into Pydantic models |
 | `app/models/` | SQLAlchemy ORM models — table definitions, inherit from `infrastructure/db/base.py` |
 | `app/schemas/` | Pydantic models — request bodies and response shapes |
+| `app/infrastructure/` | External services managed by this project — DB engine/session, file storage, logging |
 
 ## Current state
 
-All four layers are active. Product categories (`/v1/product-categories`) is the first implemented feature. `app/services/errors.py` holds shared domain exceptions. `deps.py` is the DI wiring point for all services.
+All four layers are active. `app/services/errors.py` holds shared domain exceptions. `deps.py` is the DI wiring point for all services.
 
 ## Example: product search
 
