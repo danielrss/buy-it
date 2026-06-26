@@ -42,5 +42,5 @@ class ProductListQuery(BaseModel):
     price_max: int | None = Field(default=None, ge=0)
     with_image: bool | None = None
     product_category_id: uuid.UUID | None = None
-    sort_by: ProductSortBy = ProductSortBy.TITLE
+    sort_by: ProductSortBy = ProductSortBy.PRICE
     sort_order: SortOrder = SortOrder.ASC

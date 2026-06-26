@@ -60,20 +60,20 @@ class TestListProducts:
         assert "Alpha" in titles
         assert "Beta" in titles
 
-    async def test_list_default_sort_is_title_asc(self, client: AsyncClient) -> None:
+    async def test_list_default_sort_is_price_asc(self, client: AsyncClient) -> None:
         cat = await _create_category(client)
         await _create_product(
-            client, title="Zulu", sku="Z-001", price="5.00", category_id=cat
+            client, title="Zulu", sku="Z-001", price="50.00", category_id=cat
         )
         await _create_product(
-            client, title="Apple", sku="AP-001", price="5.00", category_id=cat
+            client, title="Apple", sku="AP-001", price="10.00", category_id=cat
         )
         await _create_product(
-            client, title="Mango", sku="MN-001", price="5.00", category_id=cat
+            client, title="Mango", sku="MN-001", price="30.00", category_id=cat
         )
         resp = await client.get(BASE)
-        titles = [p["title"] for p in resp.json()]
-        assert titles == sorted(titles)
+        prices = [float(p["price"]) for p in resp.json()]
+        assert prices == sorted(prices)
 
     async def test_list_sort_by_price_asc(self, client: AsyncClient) -> None:
         cat = await _create_category(client)
