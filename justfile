@@ -58,7 +58,7 @@ fmt: check-python
 # Remove venv, tool caches, and compiled Python files
 cleanup-local:
     rm -rf .venv .pytest_cache .ruff_cache
-    find app tests -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+    find app tests migrations -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 
 # Remove project containers, built images, volumes, and networks
 cleanup-docker:
