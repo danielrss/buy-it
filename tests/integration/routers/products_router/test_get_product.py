@@ -43,23 +43,3 @@ class TestGetProduct:
     async def test_get_unknown_returns_404(self, client: AsyncClient) -> None:
         resp = await client.get(f"{BASE}/{uuid.uuid4()}")
         assert resp.status_code == 404
-
-    async def test_list_contains_created_products(self, client: AsyncClient) -> None:
-        cat_id = await _create_category(client, "Gadgets")
-        await _create_product(client, cat_id, "Alpha Product", "SKU-AAA")
-        await _create_product(client, cat_id, "Beta Product", "SKU-BBB")
-        resp = await client.get(BASE)
-        assert resp.status_code == 200
-        titles = {p["title"] for p in resp.json()}
-        assert {"Alpha Product", "Beta Product"}.issubset(titles)
-
-    async def test_list_is_ordered_by_title(self, client: AsyncClient) -> None:
-        cat_id = await _create_category(client, "Ordered")
-        await _create_product(client, cat_id, "Zebra", "ZEB-001")
-        await _create_product(client, cat_id, "Aardvark", "AAR-001")
-        resp = await client.get(BASE)
-        assert resp.status_code == 200
-        titles = [p["title"] for p in resp.json()]
-        aardvark_idx = titles.index("Aardvark")
-        zebra_idx = titles.index("Zebra")
-        assert aardvark_idx < zebra_idx

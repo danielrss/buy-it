@@ -33,7 +33,7 @@ async def _create_product(
 
 @pytest.mark.integration
 class TestUpdateProduct:
-    async def test_put_replaces_fields(self, client: AsyncClient) -> None:
+    async def test_update_replaces_fields(self, client: AsyncClient) -> None:
         cat_id = await _create_category(client)
         created = await _create_product(client, cat_id)
         resp = await client.put(
@@ -54,7 +54,7 @@ class TestUpdateProduct:
         assert float(body["price"]) == 1199.00
         assert body["description"] == "Now with more RAM"
 
-    async def test_put_unknown_returns_404(self, client: AsyncClient) -> None:
+    async def test_update_unknown_returns_404(self, client: AsyncClient) -> None:
         cat_id = await _create_category(client, "Ghost")
         resp = await client.put(
             f"{BASE}/{uuid.uuid4()}",
@@ -69,7 +69,9 @@ class TestUpdateProduct:
         )
         assert resp.status_code == 404
 
-    async def test_put_duplicate_title_returns_409(self, client: AsyncClient) -> None:
+    async def test_update_duplicate_title_returns_409(
+        self, client: AsyncClient
+    ) -> None:
         cat_id = await _create_category(client, "Dupes")
         await _create_product(client, cat_id, "Taken Title", "TAK-001")
         other = await _create_product(client, cat_id, "Other", "OTH-001")
@@ -87,7 +89,7 @@ class TestUpdateProduct:
         assert resp.status_code == 409
         assert resp.json()["detail"] == "title already exists"
 
-    async def test_put_duplicate_sku_returns_409(self, client: AsyncClient) -> None:
+    async def test_update_duplicate_sku_returns_409(self, client: AsyncClient) -> None:
         cat_id = await _create_category(client, "SKUDupes")
         await _create_product(client, cat_id, "First", "TAKEN-SKU")
         other = await _create_product(client, cat_id, "Second", "SEC-001")
@@ -105,7 +107,7 @@ class TestUpdateProduct:
         assert resp.status_code == 409
         assert resp.json()["detail"] == "sku already exists"
 
-    async def test_put_nonexistent_category_returns_400(
+    async def test_update_nonexistent_category_returns_400(
         self, client: AsyncClient
     ) -> None:
         cat_id = await _create_category(client, "Valid")
@@ -123,7 +125,9 @@ class TestUpdateProduct:
         )
         assert resp.status_code == 400
 
-    async def test_put_can_keep_same_title_and_sku(self, client: AsyncClient) -> None:
+    async def test_update_can_keep_same_title_and_sku(
+        self, client: AsyncClient
+    ) -> None:
         cat_id = await _create_category(client, "SameTitle")
         created = await _create_product(client, cat_id, "SameTitle Product", "SAME-001")
         resp = await client.put(

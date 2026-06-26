@@ -39,14 +39,14 @@ async def _create_product(
 
 @pytest.mark.integration
 class TestListProducts:
-    async def test_returns_empty_list_with_no_products(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_list_returns_empty_list(self, client: AsyncClient) -> None:
         resp = await client.get(BASE)
         assert resp.status_code == 200
         assert resp.json() == []
 
-    async def test_returns_all_products_by_default(self, client: AsyncClient) -> None:
+    async def test_list_returns_all_products_by_default(
+        self, client: AsyncClient
+    ) -> None:
         cat = await _create_category(client)
         await _create_product(
             client, title="Alpha", sku="A-001", price="10.00", category_id=cat
@@ -60,7 +60,7 @@ class TestListProducts:
         assert "Alpha" in titles
         assert "Beta" in titles
 
-    async def test_default_sort_is_title_asc(self, client: AsyncClient) -> None:
+    async def test_list_default_sort_is_title_asc(self, client: AsyncClient) -> None:
         cat = await _create_category(client)
         await _create_product(
             client, title="Zulu", sku="Z-001", price="5.00", category_id=cat
@@ -75,7 +75,7 @@ class TestListProducts:
         titles = [p["title"] for p in resp.json()]
         assert titles == sorted(titles)
 
-    async def test_sort_by_price_asc(self, client: AsyncClient) -> None:
+    async def test_list_sort_by_price_asc(self, client: AsyncClient) -> None:
         cat = await _create_category(client)
         await _create_product(
             client, title="Cheap", sku="CH-001", price="5.00", category_id=cat
@@ -91,7 +91,7 @@ class TestListProducts:
         prices = [float(p["price"]) for p in resp.json()]
         assert prices == sorted(prices)
 
-    async def test_sort_by_price_desc(self, client: AsyncClient) -> None:
+    async def test_list_sort_by_price_desc(self, client: AsyncClient) -> None:
         cat = await _create_category(client)
         await _create_product(
             client, title="Cheap2", sku="CH2-001", price="5.00", category_id=cat
@@ -104,7 +104,7 @@ class TestListProducts:
         prices = [float(p["price"]) for p in resp.json()]
         assert prices == sorted(prices, reverse=True)
 
-    async def test_filter_by_category(self, client: AsyncClient) -> None:
+    async def test_list_filter_by_category(self, client: AsyncClient) -> None:
         cat_a = await _create_category(client, "CatA")
         cat_b = await _create_category(client, "CatB")
         await _create_product(
@@ -119,7 +119,7 @@ class TestListProducts:
         assert len(body) == 1
         assert body[0]["title"] == "InA"
 
-    async def test_filter_price_min(self, client: AsyncClient) -> None:
+    async def test_list_filter_by_price_min(self, client: AsyncClient) -> None:
         cat = await _create_category(client)
         await _create_product(
             client, title="Cheap3", sku="CH3-001", price="5.00", category_id=cat
@@ -135,7 +135,7 @@ class TestListProducts:
         assert "Expensive3" in titles
         assert "Cheap3" not in titles
 
-    async def test_filter_price_max(self, client: AsyncClient) -> None:
+    async def test_list_filter_by_price_max(self, client: AsyncClient) -> None:
         cat = await _create_category(client)
         await _create_product(
             client, title="Cheap4", sku="CH4-001", price="5.00", category_id=cat
@@ -151,7 +151,7 @@ class TestListProducts:
         assert "Cheap4" in titles
         assert "Expensive4" not in titles
 
-    async def test_filter_price_range(self, client: AsyncClient) -> None:
+    async def test_list_filter_by_price_range(self, client: AsyncClient) -> None:
         cat = await _create_category(client)
         await _create_product(
             client, title="Low", sku="LW-001", price="10.00", category_id=cat
@@ -170,7 +170,7 @@ class TestListProducts:
         assert "Low" not in titles
         assert "High" not in titles
 
-    async def test_filter_with_image_true(self, client: AsyncClient) -> None:
+    async def test_list_filter_by_with_image_true(self, client: AsyncClient) -> None:
         cat = await _create_category(client)
         await _create_product(
             client,
@@ -191,7 +191,7 @@ class TestListProducts:
         assert "WithImg" in titles
         assert "NoImg" not in titles
 
-    async def test_filter_with_image_false(self, client: AsyncClient) -> None:
+    async def test_list_filter_by_with_image_false(self, client: AsyncClient) -> None:
         cat = await _create_category(client)
         await _create_product(
             client,
@@ -212,7 +212,7 @@ class TestListProducts:
         assert "NoImg2" in titles
         assert "WithImg2" not in titles
 
-    async def test_search_sku_substring_case_insensitive(
+    async def test_list_search_sku_substring_case_insensitive(
         self, client: AsyncClient
     ) -> None:
         cat = await _create_category(client)
@@ -229,7 +229,7 @@ class TestListProducts:
         assert "Gadget" in titles
         assert "Other" not in titles
 
-    async def test_search_sku_partial_match(self, client: AsyncClient) -> None:
+    async def test_list_search_sku_partial_match(self, client: AsyncClient) -> None:
         cat = await _create_category(client)
         await _create_product(
             client, title="Widget", sku="WGT-2024-XL", price="15.00", category_id=cat
@@ -239,7 +239,7 @@ class TestListProducts:
         body = resp.json()
         assert any(p["title"] == "Widget" for p in body)
 
-    async def test_search_title_fuzzy_typo(self, client: AsyncClient) -> None:
+    async def test_list_search_title_fuzzy_typo(self, client: AsyncClient) -> None:
         cat = await _create_category(client)
         await _create_product(
             client, title="Smartphone", sku="SMP-001", price="500.00", category_id=cat
@@ -250,7 +250,7 @@ class TestListProducts:
         body = resp.json()
         assert any(p["title"] == "Smartphone" for p in body)
 
-    async def test_search_relevance_orders_closest_first(
+    async def test_list_search_relevance_orders_closest_first(
         self, client: AsyncClient
     ) -> None:
         cat = await _create_category(client)
@@ -267,7 +267,7 @@ class TestListProducts:
         assert len(body) >= 2
         assert body[0]["title"] == "Laptop"
 
-    async def test_search_ignores_sort_by_param(self, client: AsyncClient) -> None:
+    async def test_list_search_ignores_sort_by_param(self, client: AsyncClient) -> None:
         cat = await _create_category(client)
         await _create_product(
             client, title="Camera", sku="CAM-001", price="300.00", category_id=cat
@@ -279,7 +279,9 @@ class TestListProducts:
         assert resp.status_code == 200
         assert any(p["title"] == "Camera" for p in resp.json())
 
-    async def test_search_no_match_returns_empty(self, client: AsyncClient) -> None:
+    async def test_list_search_no_match_returns_empty(
+        self, client: AsyncClient
+    ) -> None:
         cat = await _create_category(client)
         await _create_product(
             client, title="Toaster", sku="TST-001", price="25.00", category_id=cat
@@ -288,7 +290,7 @@ class TestListProducts:
         assert resp.status_code == 200
         assert resp.json() == []
 
-    async def test_combined_filter_category_and_price(
+    async def test_list_combined_filter_by_category_and_price(
         self, client: AsyncClient
     ) -> None:
         cat_a = await _create_category(client, "FilterCatA")
