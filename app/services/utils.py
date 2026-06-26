@@ -1,36 +1,31 @@
-def to_absolute_media_url(image_url: str | None, base_url: str) -> str | None:
+def to_absolute_media_url(image_url: str, base_url: str) -> str:
     """
     Prepend the configured base URL to a root-relative media path.
 
     Args:
-        image_url (str | None): The stored root-relative path, e.g.
+        image_url (str): The stored root-relative path, e.g.
             ``/media/products/<uuid>``.
         base_url (str): The public origin, e.g. ``https://api.example.com``.
             When empty, the path is returned unchanged.
 
     Returns:
-        str | None: The absolute URL, or the original value when there is
-        nothing to prepend.
+        str: The absolute URL.
     """
-    if image_url is None or not base_url:
-        return image_url
     return f"{base_url.rstrip('/')}{image_url}"
 
 
-def to_relative_media_url(image_url: str | None, base_url: str) -> str | None:
+def to_relative_media_url(image_url: str, base_url: str) -> str:
     """
     Strip the configured base URL so the value stays root-relative.
 
     Args:
-        image_url (str | None): The incoming URL, absolute or already relative.
+        image_url (str): The incoming URL, absolute or already relative.
         base_url (str): The public origin to strip. When empty, the value is
             returned unchanged.
 
     Returns:
-        str | None: The root-relative path.
+        str: The root-relative path.
     """
-    if image_url is None or not base_url:
-        return image_url
     prefix = base_url.rstrip("/")
     if image_url.startswith(prefix):
         return image_url[len(prefix) :]

@@ -2,7 +2,7 @@ import uuid
 from decimal import Decimal
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field
 
 from app.schemas.common import SortOrder
 
@@ -17,7 +17,7 @@ class ProductWrite(BaseModel):
     description: str | None
     sku: str
     price: Decimal = Field(gt=0, examples=[Decimal("19.99")])
-    image_url: str | None
+    image_url: AnyHttpUrl | None
     product_category_id: uuid.UUID
 
 

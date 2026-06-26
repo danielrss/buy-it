@@ -42,6 +42,7 @@ class TestProductServiceUpdate:
         category_id = uuid.uuid4()
         mock_product = MagicMock()
         mock_product.id = product_id
+        mock_product.image_url = None
         session.get.return_value = mock_product
         session.scalar.return_value = None
         service = ProductService(session, media_settings)

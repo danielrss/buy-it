@@ -18,9 +18,6 @@ class TestToAbsoluteMediaUrl:
     def test_empty_base_returns_relative(self) -> None:
         assert to_absolute_media_url(_REL, "") == _REL
 
-    def test_none_image_returns_none(self) -> None:
-        assert to_absolute_media_url(None, _BASE) is None
-
 
 @pytest.mark.unit
 class TestToRelativeMediaUrl:
@@ -37,9 +34,6 @@ class TestToRelativeMediaUrl:
 
     def test_empty_base_returns_value_unchanged(self) -> None:
         assert to_relative_media_url(_ABS, "") == _ABS
-
-    def test_none_image_returns_none(self) -> None:
-        assert to_relative_media_url(None, _BASE) is None
 
     def test_foreign_host_raises(self) -> None:
         other = "https://cdn.other.com/media/products/abc.png"

@@ -3,6 +3,7 @@ from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from pydantic import AnyHttpUrl
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.config import MediaSettings
@@ -75,7 +76,7 @@ class TestProductServiceCreate:
             sku="SKU-001",
             price=Decimal("9.99"),
             # client sends back the absolute url it received on upload
-            image_url=f"{base}/media/products/abc.png",
+            image_url=AnyHttpUrl(f"{base}/media/products/abc.png"),
             product_category_id=uuid.uuid4(),
         )
         result = await service.create(data)
@@ -96,7 +97,7 @@ class TestProductServiceCreate:
             description=None,
             sku="SKU-001",
             price=Decimal("9.99"),
-            image_url="https://cdn.other.com/x.jpg",
+            image_url=AnyHttpUrl("https://cdn.other.com/x.jpg"),
             product_category_id=uuid.uuid4(),
         )
 

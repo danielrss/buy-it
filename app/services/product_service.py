@@ -54,7 +54,10 @@ class ProductService:
 
     def _to_read(self, product: Product) -> ProductRead:
         read = ProductRead.model_validate(product)
-        read.image_url = to_absolute_media_url(read.image_url, self._media_base_url)
+        if product.image_url is not None:
+            read.image_url = to_absolute_media_url(
+                product.image_url, self._media_base_url
+            )
         return read
 
     async def _validate_category(self, product_category_id: uuid.UUID) -> None:
@@ -92,12 +95,13 @@ class ProductService:
         product_model.description = data.description
         product_model.sku = data.sku
         product_model.price = data.price
-        try:
-            product_model.image_url = to_relative_media_url(
-                data.image_url, self._media_base_url
-            )
-        except ValueError as exc:
-            raise InvalidImageUrl from exc
+        if data.image_url is not None:
+            try:
+                product_model.image_url = to_relative_media_url(
+                    str(data.image_url), self._media_base_url
+                )
+            except ValueError as exc:
+                raise InvalidImageUrl from exc
         product_model.product_category_id = data.product_category_id
         return product_model
 
@@ -241,4 +245,4 @@ class ProductService:
             logger.exception("There was an error while uploading a product image")
             raise
 
-        return to_absolute_media_url(saved, self._media_base_url) or saved
+        return to_absolute_media_url(saved, self._media_base_url)
