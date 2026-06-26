@@ -101,7 +101,7 @@ buy-it/
 `deps.py` is the single place to add FastAPI `Depends()` providers - services, DB sessions, etc.
 
 ### Configuration
-`app/config.py` exports `get_settings()` (LRU-cached). Settings read from env or `.env`. Available variables: `ENVIRONMENT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_HOST` (default: `db`), `POSTGRES_PORT` (default: `5432`), `MEDIA_ROOT` (default: `media`), `MEDIA_URL_PREFIX` (default: `/media`), `MEDIA_BASE_URL` (default: `http://localhost:8000` - origin prepended to product `image_url` values so they are returned as absolute URLs), `MAX_IMAGE_BYTES` (default: `1048576`).
+`app/config.py` exports `get_settings()` (LRU-cached). Settings read from env or `.env`. Available variables: `ENVIRONMENT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_HOST` (default: `db`), `POSTGRES_PORT` (default: `5432`), `MEDIA_ROOT` (default: `/app/media`), `MEDIA_URL_PREFIX` (default: `/media`), `MEDIA_BASE_URL` (default: `http://localhost:8000` - origin prepended to product `image_url` values so they are returned as absolute URLs), `MAX_IMAGE_BYTES` (default: `1048576`).
 ## Adding a new feature
 
 See `ARCHITECTURE.md` for the full pattern with a product-search example. The short version:

@@ -69,7 +69,7 @@ Settings are read from environment variables (or `.env`). Available variables:
 | `POSTGRES_DB`       | `buyit`   | Postgres database name             |
 | `POSTGRES_HOST`     | `db`      | Postgres host                      |
 | `POSTGRES_PORT`     | `5432`    | Postgres port                      |
-| `MEDIA_ROOT`        | `media`   | Filesystem dir where uploads are stored |
+| `MEDIA_ROOT`        | `/app/media`   | Filesystem dir where uploads are stored |
 | `MEDIA_URL_PREFIX`  | `/media`  | URL path prefix the media files are served under |
 | `MEDIA_BASE_URL`    | `http://localhost:8000` | Origin prepended to make `image_url` an absolute URL |
 | `MAX_IMAGE_BYTES`   | `1048576` | Max accepted image upload size in bytes (1 MiB) |

@@ -45,7 +45,10 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_PORT: ${POSTGRES_PORT}
-      MEDIA_ROOT: /app/media
+      MEDIA_ROOT: ${MEDIA_ROOT}
+      MEDIA_URL_PREFIX: ${MEDIA_URL_PREFIX}
+      MEDIA_BASE_URL: ${MEDIA_BASE_URL}
+      MAX_IMAGE_BYTES: ${MAX_IMAGE_BYTES}
     env_file:
       - path: .env
         required: false
