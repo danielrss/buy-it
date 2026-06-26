@@ -31,7 +31,6 @@ class TestProductCategoryServiceCreate:
 
     async def test_raises_duplicate_name_on_integrity_error(self) -> None:
         session = AsyncMock()
-        session.get.return_value = None  # no parent lookup triggered (parent_id=None)
         session.commit.side_effect = IntegrityError(None, None, Exception())
         service = ProductCategoryService(session)
 

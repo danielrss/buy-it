@@ -2,9 +2,14 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from app.schemas.product_category_schema import ProductCategoryWrite
-from app.services.errors import ProductCategoryNotFound, ProductCategoryParentNotFound
+from app.services.errors import (
+    DuplicateProductCategoryName,
+    ProductCategoryNotFound,
+    ProductCategoryParentNotFound,
+)
 from app.services.product_category_service import ProductCategoryService
 
 
@@ -32,4 +37,21 @@ class TestProductCategoryServiceUpdate:
         service = ProductCategoryService(session)
 
         with pytest.raises(ProductCategoryNotFound):
+            await service.update(uuid.uuid4(), _write())
+
+    async def test_raises_parent_not_found_when_parent_missing(self) -> None:
+        session = AsyncMock()
+        mock_category = MagicMock()
+        session.get.side_effect = [mock_category, None]
+        service = ProductCategoryService(session)
+
+        with pytest.raises(ProductCategoryParentNotFound):
+            await service.update(uuid.uuid4(), _write(parent=uuid.uuid4()))
+
+    async def test_raises_duplicate_name_on_integrity_error(self) -> None:
+        session = AsyncMock()
+        session.commit.side_effect = IntegrityError(None, None, Exception())
+        service = ProductCategoryService(session)
+
+        with pytest.raises(DuplicateProductCategoryName):
             await service.update(uuid.uuid4(), _write())
