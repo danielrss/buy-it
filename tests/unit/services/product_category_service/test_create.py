@@ -4,7 +4,10 @@ from unittest.mock import AsyncMock
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from app.schemas.product_category_schema import ProductCategoryWrite
+from app.schemas.product_category_schema import (
+    ProductCategoryRead,
+    ProductCategoryWrite,
+)
 from app.services.errors import (
     DuplicateProductCategoryName,
     ProductCategoryParentNotFound,
@@ -20,7 +23,24 @@ def _write(
 
 @pytest.mark.unit
 class TestProductCategoryServiceCreate:
-    async def test_raises_parent_not_found_when_parent_missing(self) -> None:
+    async def test_create_returns_product_category_read(self) -> None:
+        session = AsyncMock()
+        cat_id = uuid.uuid4()
+
+        async def _set_id(obj) -> None:
+            obj.id = cat_id
+
+        session.refresh.side_effect = _set_id
+        service = ProductCategoryService(session)
+
+        result = await service.create(_write(name="Electronics"))
+
+        assert isinstance(result, ProductCategoryRead)
+        assert result.id == cat_id
+        assert result.name == "Electronics"
+        assert result.parent_category_id is None
+
+    async def test_create_raises_parent_not_found_when_parent_missing(self) -> None:
         session = AsyncMock()
         session.get.return_value = None
         service = ProductCategoryService(session)
@@ -29,7 +49,7 @@ class TestProductCategoryServiceCreate:
         with pytest.raises(ProductCategoryParentNotFound):
             await service.create(_write(parent=parent_id))
 
-    async def test_raises_duplicate_name_on_integrity_error(self) -> None:
+    async def test_create_raises_duplicate_name_on_integrity_error(self) -> None:
         session = AsyncMock()
         session.commit.side_effect = IntegrityError(None, None, Exception())
         service = ProductCategoryService(session)

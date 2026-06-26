@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from app.schemas.product_schema import ProductWrite
+from app.schemas.product_schema import ProductRead, ProductWrite
 from app.services.errors import (
     DuplicateProductSku,
     DuplicateProductTitle,
@@ -33,7 +33,30 @@ def _write(
 
 @pytest.mark.unit
 class TestProductServiceUpdate:
-    async def test_raises_not_found_when_product_missing(self) -> None:
+    async def test_update_returns_updated_product_read(self) -> None:
+        session = AsyncMock()
+        product_id = uuid.uuid4()
+        category_id = uuid.uuid4()
+        mock_product = MagicMock()
+        mock_product.id = product_id
+        session.get.return_value = mock_product
+        session.scalar.return_value = None
+        service = ProductService(session)
+
+        data = _write(
+            title="Updated Widget",
+            sku="SKU-002",
+            price=Decimal("19.99"),
+            category_id=category_id,
+        )
+        result = await service.update(product_id, data)
+
+        assert isinstance(result, ProductRead)
+        assert result.id == product_id
+        assert result.title == "Updated Widget"
+        assert result.price == Decimal("19.99")
+
+    async def test_update_raises_not_found_when_product_missing(self) -> None:
         session = AsyncMock()
         session.get.return_value = None
         service = ProductService(session)
@@ -41,7 +64,7 @@ class TestProductServiceUpdate:
         with pytest.raises(ProductNotFound):
             await service.update(uuid.uuid4(), _write())
 
-    async def test_raises_duplicate_title_when_title_exists(self) -> None:
+    async def test_update_raises_duplicate_title_when_title_exists(self) -> None:
         session = AsyncMock()
         session.scalar.return_value = MagicMock()
         service = ProductService(session)
@@ -49,7 +72,7 @@ class TestProductServiceUpdate:
         with pytest.raises(DuplicateProductTitle):
             await service.update(uuid.uuid4(), _write())
 
-    async def test_raises_duplicate_sku_when_sku_exists(self) -> None:
+    async def test_update_raises_duplicate_sku_when_sku_exists(self) -> None:
         session = AsyncMock()
         session.scalar.side_effect = [None, MagicMock()]
         service = ProductService(session)
@@ -57,7 +80,7 @@ class TestProductServiceUpdate:
         with pytest.raises(DuplicateProductSku):
             await service.update(uuid.uuid4(), _write())
 
-    async def test_raises_duplicate_title_on_integrity_error(self) -> None:
+    async def test_update_raises_duplicate_title_on_integrity_error(self) -> None:
         session = AsyncMock()
         session.scalar.return_value = None
         session.commit.side_effect = IntegrityError(None, None, Exception())
@@ -66,7 +89,7 @@ class TestProductServiceUpdate:
         with pytest.raises(DuplicateProductTitle):
             await service.update(uuid.uuid4(), _write())
 
-    async def test_raises_category_not_found_when_category_missing(self) -> None:
+    async def test_update_raises_category_not_found_when_category_missing(self) -> None:
         session = AsyncMock()
         mock_product = MagicMock()
 

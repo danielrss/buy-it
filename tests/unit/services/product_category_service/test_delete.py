@@ -9,7 +9,18 @@ from app.services.product_category_service import ProductCategoryService
 
 @pytest.mark.unit
 class TestProductCategoryServiceDelete:
-    async def test_raises_not_found_when_category_missing(self) -> None:
+    async def test_delete_succeeds(self) -> None:
+        session = AsyncMock()
+        session.get.return_value = MagicMock()
+        session.scalar.return_value = 0
+        service = ProductCategoryService(session)
+
+        await service.delete(uuid.uuid4())
+
+        session.delete.assert_called_once()
+        session.commit.assert_called_once()
+
+    async def test_delete_raises_not_found_when_category_missing(self) -> None:
         session = AsyncMock()
         session.get.return_value = None
         service = ProductCategoryService(session)
@@ -17,7 +28,9 @@ class TestProductCategoryServiceDelete:
         with pytest.raises(ProductCategoryNotFound):
             await service.delete(uuid.uuid4())
 
-    async def test_raises_category_has_children_when_children_exist(self) -> None:
+    async def test_delete_raises_category_has_children_when_children_exist(
+        self,
+    ) -> None:
         session = AsyncMock()
         mock_category = MagicMock()
         session.get.return_value = mock_category
