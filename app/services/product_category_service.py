@@ -1,10 +1,11 @@
 import uuid
 
-from sqlalchemy import func, select
+from sqlalchemy import exists, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.logging.logger import logger
+from app.models.product import Product
 from app.models.product_category import ProductCategory
 from app.schemas.product_category_schema import (
     ProductCategoryRead,
@@ -13,6 +14,7 @@ from app.schemas.product_category_schema import (
 from app.services.errors import (
     DuplicateProductCategoryName,
     ProductCategoryHasChildren,
+    ProductCategoryHasProducts,
     ProductCategoryNotFound,
     ProductCategoryParentNotFound,
 )
@@ -102,11 +104,17 @@ class ProductCategoryService:
         if category is None:
             raise ProductCategoryNotFound
 
-        child_count = await self._session.scalar(
-            select(func.count()).where(ProductCategory.parent_category_id == id)
+        has_children = await self._session.scalar(
+            select(exists().where(ProductCategory.parent_category_id == id))
         )
-        if child_count:
+        if has_children:
             raise ProductCategoryHasChildren
+
+        has_products = await self._session.scalar(
+            select(exists().where(Product.product_category_id == id))
+        )
+        if has_products:
+            raise ProductCategoryHasProducts
 
         await self._session.delete(category)
         await self._session.commit()

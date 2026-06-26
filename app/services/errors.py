@@ -14,6 +14,10 @@ class ProductCategoryHasChildren(Exception):
     pass
 
 
+class ProductCategoryHasProducts(Exception):
+    pass
+
+
 class DuplicateProductTitle(Exception):
     pass
 

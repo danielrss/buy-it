@@ -10,6 +10,7 @@ from app.schemas.product_category_schema import (
 from app.services.errors import (
     DuplicateProductCategoryName,
     ProductCategoryHasChildren,
+    ProductCategoryHasProducts,
     ProductCategoryNotFound,
     ProductCategoryParentNotFound,
 )
@@ -122,7 +123,9 @@ async def update_product_category(
     responses={
         status.HTTP_204_NO_CONTENT: {"description": "Category deleted"},
         status.HTTP_404_NOT_FOUND: {"description": "Category not found"},
-        status.HTTP_409_CONFLICT: {"description": "Category has child categories"},
+        status.HTTP_409_CONFLICT: {
+            "description": "Category has child categories or products"
+        },
     },
 )
 async def delete_product_category(
@@ -134,6 +137,10 @@ async def delete_product_category(
     except ProductCategoryHasChildren:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="category has child categories"
+        ) from None
+    except ProductCategoryHasProducts:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="category has products"
         ) from None
     except ProductCategoryNotFound:
         raise HTTPException(
